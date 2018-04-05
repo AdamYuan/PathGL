@@ -10,5 +10,5 @@ make
 	L to lock movement
 	I to take screenshots
 ## Screenshots
-![alt text](https://raw.githubusercontent.com/AdamYuan/PathGL/master/screenshots/1.png)
-![alt text](https://raw.githubusercontent.com/AdamYuan/PathGL/master/screenshots/2.png)
+![alt text](https://raw.githubusercontent.com/AdamYuan/PathGL/master/screenshots/s1.png)
+![alt text](https://raw.githubusercontent.com/AdamYuan/PathGL/master/screenshots/s2.png)
