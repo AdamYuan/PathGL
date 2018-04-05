@@ -49,6 +49,7 @@ private:
 	void destroy_gl_objects();
 	void compute();
 	void render_quad();
+	unsigned long get_sps();
 public:
 	explicit Application();
 	~Application();

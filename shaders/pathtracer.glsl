@@ -71,10 +71,10 @@ const Plane planes[PLANE_NUM] =
 	{{.0f, 3.0f, .0f},		{0, -1, 0},	{{6, 6, 6},		{0, 0, 0},	DIFFUSE}},
 	{{.0f, .0f, .5f}, 		{0, 0, -1},	{{6, 6, 6},		{0, 0, 0},	DIFFUSE}}
 };
-const Sphere spheres[SPHERE_NUM] = 
+const Sphere spheres[SPHERE_NUM] =
 {
 	{{-0.75, -1.45, -4.4},	1.05, 	{{.4f, .8f, .4f}, 	{0, 0, 0},		SPECULAR}}, // Middle sphere
-	{{2.0, -2.05, -3.7},	0.5,	{{1.0f, 1.0f, 1.0f},{0, 0, 0},		REFRACTIVE}}, // Right sphere
+	{{2.0, -2.05, -3.7},	0.5,	{{0.0f, 1.0f, 1.0f},{0, 0, 0},		REFRACTIVE}}, // Right sphere
 	{{-1.75, -1.95, -3.1},	0.6,	{{4, 4, 12},		{0, 0, 0},		DIFFUSE}}, // Left sphere
 	{{0, 1.9, -3},			0.5,	{{0, 0, 0}, 		{50, 50, 50},	DIFFUSE}} // Light
 };
@@ -178,7 +178,7 @@ vec3 trace(in Ray ray)
 
 				vec3 hemi_dir = hemisphere(rand(), rand());
 
-				ray.direction = 
+				ray.direction =
 					vec3 (
 							dot(vec3(rot_x.x, rot_y.x, normal.x), hemi_dir),
 							dot(vec3(rot_x.y, rot_y.y, normal.y), hemi_dir),
@@ -226,10 +226,9 @@ Ray make_ray(in const vec2 screen_pos)
 {
 	vec2 size = vec2(imageSize(out_img));
 	vec2 pos = 2.0f * screen_pos / size - 1.0f;
+	vec3 dir = normalize(cam_forward + (cam_right * pos.x * cam_width) + (cam_up * pos.y * cam_height));
 
-	return Ray(cam_origin,
-			normalize(cam_forward + (cam_right * pos.x * cam_width) + (cam_up * pos.y * cam_height))
-			);
+	return Ray(cam_origin, dir);
 }
 
 void main()

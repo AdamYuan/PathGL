@@ -7,8 +7,6 @@
 #include "Camera.hpp"
 #include "Config.hpp"
 
-constexpr float kAspectRatio = (float)WIDTH / (float)HEIGHT;
-
 Camera::Camera(float fov) : fov_(fov)
 {
 	yaw_ = pitch_ = 0.0f;
@@ -25,7 +23,7 @@ void Camera::Update()
 	up_ = glm::cross(right_, forward_);
 
 	height_ = glm::tan(fov_);
-	width_ = height_ * kAspectRatio;
+	width_ = height_ * ASPECT_RATIO;
 }
 
 void Camera::SetLookAt(const glm::vec3 &look_at)
@@ -43,23 +41,22 @@ void Camera::SetOrigin(const glm::vec3 &origin)
 
 bool Camera::Control(int key)
 {
-	constexpr float kSpeed = 0.3f, kAngle = 5.0f;
 	if (key == GLFW_KEY_W)
-		origin_ += kSpeed * forward_;
+		origin_ += CAM_SPEED * forward_;
 	else if (key == GLFW_KEY_S)
-		origin_ -= kSpeed * forward_;
+		origin_ -= CAM_SPEED * forward_;
 	else if (key == GLFW_KEY_A)
-		origin_ -= glm::normalize(glm::cross(forward_, up_)) * kSpeed;
+		origin_ -= glm::normalize(glm::cross(forward_, up_)) * CAM_SPEED;
 	else if (key == GLFW_KEY_D)
-		origin_ += glm::normalize(glm::cross(forward_, up_)) * kSpeed;
+		origin_ += glm::normalize(glm::cross(forward_, up_)) * CAM_SPEED;
 	else if (key == GLFW_KEY_LEFT)
-		yaw_ -= kAngle;
+		yaw_ -= CAM_ANGLE;
 	else if (key == GLFW_KEY_RIGHT)
-		yaw_ += kAngle;
+		yaw_ += CAM_ANGLE;
 	else if (key == GLFW_KEY_UP)
-		pitch_ += kAngle;
+		pitch_ += CAM_ANGLE;
 	else if (key == GLFW_KEY_DOWN)
-		pitch_ -= kAngle;
+		pitch_ -= CAM_ANGLE;
 	else
 		return false;
 

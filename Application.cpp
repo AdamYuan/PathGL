@@ -121,9 +121,9 @@ void Application::init_ray_shader()
 	glCompileShader(ray_shader);
 
 	int success; glGetShaderiv(ray_shader, GL_COMPILE_STATUS, &success);
-	printf("%s\n", ray_shader_src);
 	if(!success)
 	{
+		printf("%s\n", ray_shader_src);
 		char info_log[65536]; glGetShaderInfoLog(ray_shader, 10000, nullptr, info_log);
 		printf("%s\n\n\n", info_log);
 	}
@@ -241,7 +241,7 @@ void Application::Run()
 
 		glfwSwapBuffers(window_);
 
-		sprintf(title, "%d spp%s", samples_, locked_ ? " [locked]" : "");
+		sprintf(title, "pass %d sample/second %luk %s", samples_, get_sps() / 1000lu, locked_ ? " [locked]" : "");
 		glfwSetWindowTitle(window_, title);
 	}
 }
@@ -276,4 +276,20 @@ void Application::key_callback(GLFWwindow *window, int key, int, int action, int
 		else if(key == GLFW_KEY_L)
 			app->locked_ = !app->locked_;
 	}
+}
+
+unsigned long Application::get_sps()
+{
+	static unsigned last_time = 0;
+	static unsigned long result = 0, sum = 0;
+
+	sum += WIDTH * HEIGHT;
+	if((unsigned)glfwGetTime() > last_time)
+	{
+		last_time = (unsigned)glfwGetTime();
+		result = sum;
+		sum = 0;
+	}
+
+	return result;
 }
