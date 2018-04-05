@@ -6,11 +6,11 @@
 #define CONFIG_HPP
 
 constexpr int UNIT_X = 48;
-constexpr int UNIT_Y = 24;
+constexpr int UNIT_Y = 20;
 constexpr float CAM_SPEED = 0.1f, CAM_ANGLE = 5.0f;
 
-#define WIDTH__ 1920
-#define HEIGHT__ 1080
+#define WIDTH__ 1440
+#define HEIGHT__ 900
 constexpr unsigned GROUP_X = WIDTH__ / UNIT_X;
 constexpr unsigned GROUP_Y = HEIGHT__ / UNIT_Y;
 constexpr unsigned WIDTH = GROUP_X * UNIT_X;
