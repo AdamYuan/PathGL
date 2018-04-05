@@ -2,8 +2,8 @@
 // Created by adamyuan on 4/1/18.
 //
 
-#ifndef PATHTRACERGL_APPLICATION_HPP
-#define PATHTRACERGL_APPLICATION_HPP
+#ifndef APPLICATION_HPP
+#define APPLICATION_HPP
 
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
@@ -27,6 +27,7 @@ struct QuadShader
 class Application
 {
 private:
+	bool locked_;
 	int samples_;
 	Resources res_;
 	RayShader ray_;
@@ -55,4 +56,4 @@ public:
 };
 
 
-#endif //PATHTRACERGL_APPLICATION_HPP
+#endif

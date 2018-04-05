@@ -2,8 +2,8 @@
 // Created by adamyuan on 4/4/18.
 //
 
-#ifndef PATHTRACERGL_CAMERA_HPP
-#define PATHTRACERGL_CAMERA_HPP
+#ifndef CAMERA_HPP
+#define CAMERA_HPP
 
 #include <glm/glm.hpp>
 
@@ -24,4 +24,4 @@ public:
 };
 
 
-#endif //PATHTRACERGL_CAMERA_HPP
+#endif

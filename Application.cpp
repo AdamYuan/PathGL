@@ -207,6 +207,7 @@ void Application::compute()
 Application::Application() : cam_(0.3926990817f * 2.0f)
 {
 	samples_ = 0;
+	locked_ = false;
 	init_window();
 	init_buffers();
 	init_texture();
@@ -240,7 +241,7 @@ void Application::Run()
 
 		glfwSwapBuffers(window_);
 
-		sprintf(title, "%d spp", samples_);
+		sprintf(title, "%d spp%s", samples_, locked_ ? " [locked]" : "");
 		glfwSetWindowTitle(window_, title);
 	}
 }
@@ -268,9 +269,11 @@ void Application::key_callback(GLFWwindow *window, int key, int, int action, int
 	auto *app = (Application*)glfwGetWindowUserPointer(window);
 	if(action == GLFW_PRESS)
 	{
-		if(app->cam_.Control(key))
+		if(!app->locked_ && app->cam_.Control(key))
 			app->samples_ = 0;
 		else if(key == GLFW_KEY_I)
 			app->screenshot();
+		else if(key == GLFW_KEY_L)
+			app->locked_ = !app->locked_;
 	}
 }

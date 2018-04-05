@@ -2,11 +2,11 @@
 // Created by adamyuan on 4/1/18.
 //
 
-#ifndef PATHTRACERGL_CONFIG_HPP
-#define PATHTRACERGL_CONFIG_HPP
+#ifndef CONFIG_HPP
+#define CONFIG_HPP
 
-constexpr int UNIT_X = 48;
-constexpr int UNIT_Y = 32;
+constexpr int UNIT_X = 40;
+constexpr int UNIT_Y = 20;
 constexpr int WIDTH__ = 1080;
 constexpr int HEIGHT__ = 720;
 
@@ -18,4 +18,4 @@ constexpr unsigned HEIGHT = GROUP_Y * UNIT_Y;
 #define FRAG_SHADER "shaders/quad.frag"
 #define VERT_SHADER "shaders/quad.vert"
 
-#endif //PATHTRACERGL_CONFIG_HPP
+#endif
