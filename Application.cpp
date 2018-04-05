@@ -217,6 +217,9 @@ Application::Application() : cam_(0.3926990817f * 2.0f)
 
 	cam_.SetOrigin({.0f, .0f, .0f});
 	cam_.SetLookAt({.0f, .0f, -1.0f});
+
+	//cam_.SetOrigin({50.0f, 45.0f, 205.6f});
+	//cam_.SetLookAt({50.0f, 44.9f, 204.6f});
 	cam_.Update();
 
 }
@@ -241,7 +244,7 @@ void Application::Run()
 
 		glfwSwapBuffers(window_);
 
-		sprintf(title, "pass %d sample/second %luk %s", samples_, get_sps() / 1000lu, locked_ ? " [locked]" : "");
+		sprintf(title, "%d pass %luk sp/s %s", samples_, get_sps() / 1000lu, locked_ ? " [locked]" : "");
 		glfwSetWindowTitle(window_, title);
 	}
 }

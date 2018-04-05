@@ -64,21 +64,20 @@ struct Sphere
 #define SPHERE_NUM 4
 const Plane planes[PLANE_NUM] = 
 {
-	{{.0f, -2.5f, .0f}, 	{0, 1, 0},	{{6, 6, 6},		{0, 0, 0},	DIFFUSE}},
-	{{.0f, .0f, -5.5f}, 	{0, 0, 1},	{{6, 6, 6},		{0, 0, 0},	DIFFUSE}},
-	{{-2.75f, .0f, .0f},	{1, 0, 0},	{{10, 2, 2},	{0, 0, 0},	DIFFUSE}},
-	{{2.75f, .0f, .0f}, 	{-1, 0, 0},	{{2, 10, 2},	{0, 0, 0},	DIFFUSE}},
-	{{.0f, 3.0f, .0f},		{0, -1, 0},	{{6, 6, 6},		{0, 0, 0},	DIFFUSE}},
-	{{.0f, .0f, .5f}, 		{0, 0, -1},	{{6, 6, 6},		{0, 0, 0},	DIFFUSE}}
+	{{.0, -2.5, .0}, 	{0, 1, 0},	{{.6, .6, .6},		{0, 0, 0},	DIFFUSE}},
+	{{.0, .0, -5.5}, 	{0, 0, 1},	{{.6, .6, .6},		{0, 0, 0},	DIFFUSE}},
+	{{-2.75, .0, .0},	{1, 0, 0},	{{1.0, .2, .2},		{0, 0, 0},	DIFFUSE}},
+	{{2.75, .0, .0}, 	{-1, 0, 0},	{{.2, 1.0, .2},		{0, 0, 0},	DIFFUSE}},
+	{{.0, 3.0, .0},		{0, -1, 0},	{{.6, .6, .6},		{0, 0, 0},	DIFFUSE}},
+	{{.0, .0, .5}, 		{0, 0, -1},	{{.6, .6, .6},		{0, 0, 0},	DIFFUSE}}
 };
 const Sphere spheres[SPHERE_NUM] =
 {
-	{{-0.75, -1.45, -4.4},	1.05, 	{{.4f, .8f, .4f}, 	{0, 0, 0},		SPECULAR}}, // Middle sphere
-	{{2.0, -2.05, -3.7},	0.5,	{{0.0f, 1.0f, 1.0f},{0, 0, 0},		REFRACTIVE}}, // Right sphere
-	{{-1.75, -1.95, -3.1},	0.6,	{{4, 4, 12},		{0, 0, 0},		DIFFUSE}}, // Left sphere
-	{{0, 1.9, -3},			0.5,	{{0, 0, 0}, 		{50, 50, 50},	DIFFUSE}} // Light
+	{{-0.75, -1.45, -4.4},	1.05, 	{{.4, .8, .4}, 		{0, 0, 0},		SPECULAR}}, // Middle sphere
+	{{2.0, -2.05, -3.7},	0.5,	{{0.0, 1.0, 1.0},	{0, 0, 0},		REFRACTIVE}}, // Right sphere
+	{{-1.75, -1.95, -3.1},	0.6,	{{.4, .4, 1.2},		{0, 0, 0},		DIFFUSE}}, // Left sphere
+	{{0, 1.9, -3},			0.5,	{{0, 0, 0}, 		{30, 30, 30},	DIFFUSE}} // Light
 };
-
 
 
 #define NONE -1
@@ -122,6 +121,39 @@ float sphere_intersect(in const Sphere sphere, in const Ray ray, in const float 
 	return RAY_T_MAX;
 }
 
+bool intersect(in const Ray ray, out vec3 p, out vec3 normal, out Material mat)
+{
+	float t = RAY_T_MAX, new_t;
+	int type = NONE, id;
+	for(int i = 0; i < PLANE_NUM; ++i)
+	{
+		new_t = plane_intersect(planes[i], ray, t);
+		if(new_t < t) { t = new_t; type = PLANE; id = i; }
+	}
+	for(int i = 0; i < SPHERE_NUM; ++i)
+	{
+		new_t = sphere_intersect(spheres[i], ray, t);
+		if(new_t < t) { t = new_t; type = SPHERE; id = i; }
+	}
+
+	if(type != NONE)
+	{
+		p = ray.origin + ray.direction * t;
+		if(type == PLANE)
+		{
+			normal = planes[id].normal;
+			mat = planes[id].material;
+		}
+		else //sphere
+		{
+			normal = normalize(p - spheres[id].center);
+			mat = spheres[id].material;
+		}
+		return true;
+	}
+	return false;
+}
+
 vec3 hemisphere(in const float u1, in const float u2)
 {
 	float r = sqrt(1.0f - u1 * u1), phi = 6.28318530718f * u2;
@@ -131,36 +163,12 @@ vec3 hemisphere(in const float u1, in const float u2)
 vec3 trace(in Ray ray)
 {
 	vec3 ret = vec3(0.0f), k = vec3(1.0f, 1.0f, 1.0f);
+	vec3 p, normal;
+	Material mat;
 	for(int depth = 0; depth < MAX_DEPTH; ++depth)
 	{
-		float t = RAY_T_MAX, new_t;
-		int type = NONE, id;
-		for(int i = 0; i < PLANE_NUM; ++i)
+		if(intersect(ray, p, normal, mat))
 		{
-			new_t = plane_intersect(planes[i], ray, t);
-			if(new_t < t) { t = new_t; type = PLANE; id = i; }
-		}
-		for(int i = 0; i < SPHERE_NUM; ++i)
-		{
-			new_t = sphere_intersect(spheres[i], ray, t);
-			if(new_t < t) { t = new_t; type = SPHERE; id = i; }
-		}
-
-		if(type != NONE)
-		{
-			Material mat;
-			vec3 normal, p = ray.origin + ray.direction * t;
-			if(type == PLANE)
-			{
-				normal = planes[id].normal;
-				mat = planes[id].material;
-			}
-			else //sphere
-			{
-				normal = normalize(p - spheres[id].center);
-				mat = spheres[id].material;
-			}
-
 			ray.origin = p;
 			ret += mat.emission * k;
 
@@ -186,7 +194,7 @@ vec3 trace(in Ray ray)
 						 );
 
 				float cost = dot(ray.direction, normal);
-				k *= mat.color * cost * 0.1f;
+				k *= mat.color * cost;
 			}
 			else if(mat.type == SPECULAR)
 			{
