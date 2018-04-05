@@ -6,7 +6,7 @@ make
 ```
 ## Usage
 	W A S D to move camera
-	Arrow key to change perspective
+	Arrow keys to move perspective
 	L to lock movement
 	I to take screenshots
 ## Screenshots
