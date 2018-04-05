@@ -5,10 +5,10 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-constexpr int UNIT_X = 48;
-constexpr int UNIT_Y = 20;
 constexpr float CAM_SPEED = 0.1f, CAM_ANGLE = 5.0f;
 
+#define UNIT_X 48
+#define UNIT_Y 32
 #define WIDTH__ 1440
 #define HEIGHT__ 900
 constexpr unsigned GROUP_X = WIDTH__ / UNIT_X;

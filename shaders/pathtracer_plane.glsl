@@ -76,7 +76,7 @@ const Sphere spheres[SPHERE_NUM] =
 	{{-0.75, -1.45, -4.4},	1.05, 	{{.4, .8, .4}, 		{0, 0, 0},		SPECULAR}}, // Middle sphere
 	{{2.0, -2.05, -3.7},	0.5,	{{0.0, 1.0, 1.0},	{0, 0, 0},		REFRACTIVE}}, // Right sphere
 	{{-1.75, -1.95, -3.1},	0.6,	{{.4, .4, 1.2},		{0, 0, 0},		DIFFUSE}}, // Left sphere
-	{{0, 1.9, -3},			0.5,	{{0, 0, 0}, 		{30, 30, 30},	DIFFUSE}} // Light
+	{{0, 100.0, -3},		97.005,	{{0, 0, 0}, 		{30, 30, 30},	DIFFUSE}} // Light
 };
 
 
@@ -154,11 +154,11 @@ bool intersect(in const Ray ray, out vec3 p, out vec3 normal, out Material mat)
 	return false;
 }
 
-vec3 hemisphere(in const float u1, in const float u2)
+/*vec3 hemisphere(in const float u1, in const float u2)
 {
 	float r = sqrt(1.0f - u1 * u1), phi = 6.28318530718f * u2;
 	return vec3(cos(phi) * r, sin(phi) * r, u1);
-}
+}*/
 
 vec3 trace(in Ray ray)
 {
@@ -174,24 +174,12 @@ vec3 trace(in Ray ray)
 
 			if(mat.type == DIFFUSE)
 			{
-				vec3 rot_x, rot_y;
-				if(abs(normal.x) > abs(normal.y)) {
-					float inv_len = 1.0f / length(normal.xz);
-					rot_x = vec3(-normal.z * inv_len, 0.0f, normal.x * inv_len);
-				} else {
-					float inv_len = 1.0f / length(normal.yz);
-					rot_x = vec3(0.0f, normal.z * inv_len, -normal.y * inv_len);
-				}
-				rot_y = cross(normal, rot_x);
-
-				vec3 hemi_dir = hemisphere(rand(), rand());
-
-				ray.direction =
-					vec3 (
-							dot(vec3(rot_x.x, rot_y.x, normal.x), hemi_dir),
-							dot(vec3(rot_x.y, rot_y.y, normal.y), hemi_dir),
-							dot(vec3(rot_x.z, rot_y.z, normal.z), hemi_dir)
-						 );
+				//pick random reflect ray (from smallpt)
+				float r1 = rand() * 6.28318530718f;
+				float r2 = rand(), r2s = sqrt(r2);
+				vec3 u = normalize(cross(abs(normal.x) > .01 ? vec3(0, 1, 0) : vec3(1, 0, 0), normal));
+				vec3 v = cross(normal, u);
+				ray.direction = normalize(u * cos(r1) * r2s + v * sin(r1) * r2s + normal * sqrt(1 - r2));
 
 				float cost = dot(ray.direction, normal);
 				k *= mat.color * cost;

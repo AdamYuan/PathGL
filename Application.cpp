@@ -270,11 +270,11 @@ void Application::screenshot()
 void Application::key_callback(GLFWwindow *window, int key, int, int action, int)
 {
 	auto *app = (Application*)glfwGetWindowUserPointer(window);
+	if(action != GLFW_RELEASE && !app->locked_ && app->cam_.Control(key))
+		app->samples_ = 0;
 	if(action == GLFW_PRESS)
 	{
-		if(!app->locked_ && app->cam_.Control(key))
-			app->samples_ = 0;
-		else if(key == GLFW_KEY_I)
+		if(key == GLFW_KEY_I)
 			app->screenshot();
 		else if(key == GLFW_KEY_L)
 			app->locked_ = !app->locked_;
