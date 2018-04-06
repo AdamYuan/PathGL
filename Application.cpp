@@ -34,7 +34,8 @@ void Application::check_work_groups()
 	glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &work_grp_inv);
 	printf("max local work group invocations %i\n", work_grp_inv);
 
-	printf("current size x:%u y:%u\ncurrent group count x:%u y:%u\n", UNIT_X, UNIT_Y, GROUP_X, GROUP_Y);
+	printf("\ncurrent size x:%u y:%u\ncurrent group count x:%u y:%u\ncurrent window size w:%u h:%u\n",
+		   kInvocationX, kInvocationY, kGroupX, kGroupY, kWidth, kHeight);
 }
 
 void Application::init_window()
@@ -46,7 +47,7 @@ void Application::init_window()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	window_ = glfwCreateWindow(WIDTH, HEIGHT, "", nullptr, nullptr);
+	window_ = glfwCreateWindow(kWidth, kHeight, "", nullptr, nullptr);
 	glfwMakeContextCurrent(window_);
 
 	printf("OpenGL version: %s\n", glGetString(GL_VERSION));
@@ -88,12 +89,12 @@ void Application::init_texture()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, kWidth, kHeight, 0, GL_RGBA, GL_FLOAT, nullptr);
 	glBindImageTexture(0, res_.quad_tex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
 	std::mt19937 generator;
-	auto *initial_seed = new GLuint[WIDTH * HEIGHT * 4];
-	for(int i = 0; i < WIDTH * HEIGHT * 4; ++i)
+	auto *initial_seed = new GLuint[kWidth * kHeight * 4];
+	for(int i = 0; i < kWidth * kHeight * 4; ++i)
 		initial_seed[i] = (GLuint)(generator());
 	glGenTextures(1, &ray_.seed_tex);
 	glBindTexture(GL_TEXTURE_2D, ray_.seed_tex);
@@ -101,7 +102,7 @@ void Application::init_texture()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, WIDTH, HEIGHT, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, initial_seed);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, kWidth, kHeight, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, initial_seed);
 	glBindImageTexture(1, ray_.seed_tex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32UI);
 
 	delete[] initial_seed;
@@ -112,7 +113,7 @@ void Application::init_ray_shader()
 	std::string ray_shader_str {read_file(RAY_SHADER)};
 	const char *ray_shader_src1 = ray_shader_str.c_str();
 	char ray_shader_src[65536];
-	sprintf(ray_shader_src, "#version 430 core\nlayout(local_size_x = %u, local_size_y = %u) in;\n%s", UNIT_X, UNIT_Y, ray_shader_src1);
+	sprintf(ray_shader_src, "#version 430 core\nlayout(local_size_x = %u, local_size_y = %u) in;\n%s", kInvocationX, kInvocationY, ray_shader_src1);
 
 	char *real_src = ray_shader_src;
 
@@ -197,14 +198,17 @@ void Application::compute()
 	glUseProgram(ray_.program);
 	cam_.SetUniform(ray_);
 	glUniform1i(ray_.unif_last_sample, samples_);
-	glDispatchCompute(GROUP_X, GROUP_Y, 1);
+	glDispatchCompute(kGroupX, kGroupY, 1);
 	// make sure writing to image has finished before read
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 	samples_ ++;
 }
 
-Application::Application() : cam_(0.3926990817f * 2.0f)
+Application::Application(unsigned width, unsigned height, unsigned invocation_size_x, unsigned invocation_size_y)
+		: kInvocationX(invocation_size_x), kInvocationY(invocation_size_y),
+		  kGroupX(width / invocation_size_x), kGroupY(height / invocation_size_y),
+		  kWidth(width - (width % invocation_size_x)), kHeight(height - (height % invocation_size_y))
 {
 	samples_ = 0;
 	locked_ = false;
@@ -217,11 +221,11 @@ Application::Application() : cam_(0.3926990817f * 2.0f)
 
 	cam_.SetOrigin({.0f, .0f, .0f});
 	cam_.SetLookAt({.0f, .0f, -1.0f});
-
+	cam_.SetFov(0.3926990817f * 2.0f);
+	cam_.SetAspectRatio((float)kWidth / (float)kHeight);
 	//cam_.SetOrigin({50.0f, 45.0f, 205.6f});
 	//cam_.SetLookAt({50.0f, 44.9f, 204.6f});
 	cam_.Update();
-
 }
 
 Application::~Application()
@@ -244,23 +248,23 @@ void Application::Run()
 
 		glfwSwapBuffers(window_);
 
-		sprintf(title, "%d pass %luk sp/s %s", samples_, get_sps() / 1000lu, locked_ ? " [locked]" : "");
+		sprintf(title, "%d s/p %luk sp/s %s", samples_, get_sps() / 1000lu, locked_ ? " [locked]" : "");
 		glfwSetWindowTitle(window_, title);
 	}
 }
 
 void Application::screenshot()
 {
-	auto *pixels = new uint8_t[WIDTH * HEIGHT * 3];
-	auto *final = new uint8_t[WIDTH * HEIGHT * 3];
+	auto *pixels = new uint8_t[kWidth * kHeight * 3];
+	auto *final = new uint8_t[kWidth * kHeight * 3];
 
-	glReadPixels(0, 0, WIDTH, HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-	for(int i = 0; i < HEIGHT; i ++)
-		std::copy(pixels + i * WIDTH * 3, pixels + (i + 1) * WIDTH * 3, final + (HEIGHT - 1 - i) * WIDTH * 3);
+	glReadPixels(0, 0, kWidth, kHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+	for(int i = 0; i < kHeight; i ++)
+		std::copy(pixels + i * kWidth * 3, pixels + (i + 1) * kWidth * 3, final + (kHeight - 1 - i) * kWidth * 3);
 
 	char filename[256];
 	sprintf(filename, "%dspp.png", samples_);
-	stbi_write_png(filename, WIDTH, HEIGHT, 3, final, 0);
+	stbi_write_png(filename, kWidth, kHeight, 3, final, 0);
 
 	delete[] pixels;
 	delete[] final;
@@ -286,7 +290,7 @@ unsigned long Application::get_sps()
 	static unsigned last_time = 0;
 	static unsigned long result = 0, sum = 0;
 
-	sum += WIDTH * HEIGHT;
+	sum += kWidth * kHeight;
 	if((unsigned)glfwGetTime() > last_time)
 	{
 		last_time = (unsigned)glfwGetTime();

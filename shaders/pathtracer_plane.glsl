@@ -74,8 +74,8 @@ const Plane planes[PLANE_NUM] =
 const Sphere spheres[SPHERE_NUM] =
 {
 	{{-0.75, -1.45, -4.4},	1.05, 	{{.4, .8, .4}, 		{0, 0, 0},		SPECULAR}}, // Middle sphere
-	{{2.0, -2.05, -3.7},	0.5,	{{0.0, 1.0, 1.0},	{0, 0, 0},		REFRACTIVE}}, // Right sphere
-	{{-1.75, -1.95, -3.1},	0.6,	{{.4, .4, 1.2},		{0, 0, 0},		DIFFUSE}}, // Left sphere
+	{{2.0, -2.0, -3.7},	0.5,	{{1.0, 1.0, .0},	{0, 0, 0},		REFRACTIVE}}, // Right sphere
+	{{-1.75, -1.9, -3.1},	0.6,	{{.4, .4, 1.2},		{0, 0, 0},		DIFFUSE}}, // Left sphere
 	{{0, 100.0, -3},		97.005,	{{0, 0, 0}, 		{30, 30, 30},	DIFFUSE}} // Light
 };
 
@@ -171,6 +171,7 @@ vec3 trace(in Ray ray)
 		{
 			ray.origin = p;
 			ret += mat.emission * k;
+			k *= mat.color;
 
 			if(mat.type == DIFFUSE)
 			{
@@ -181,15 +182,11 @@ vec3 trace(in Ray ray)
 				vec3 v = cross(normal, u);
 				ray.direction = normalize(u * cos(r1) * r2s + v * sin(r1) * r2s + normal * sqrt(1 - r2));
 
-				float cost = dot(ray.direction, normal);
-				k *= mat.color * cost;
+				float cos_t = dot(ray.direction, normal);
+				k *= cos_t;
 			}
 			else if(mat.type == SPECULAR)
-			{
-				float cost = dot(ray.direction, normal);
-				ray.direction = normalize(ray.direction - normal * cost * 2.0f); //reflect
-				k *= mat.color;
-			}
+				ray.direction = reflect(ray.direction, normal);
 			else //refractive
 			{
 				float refr_ind = REV_REFR_INDEX;
@@ -209,7 +206,34 @@ vec3 trace(in Ray ray)
 				else
 					ray.direction = normalize(ray.direction + normal * cost1 * 2.0f);
 
-				k *= mat.color * 1.15f;
+				k *= 1.15f;
+				/*vec3 refl_dir = reflect(ray.direction, normal);
+				float ddn = dot(normal, ray.direction);
+				bool into = ddn > 0;
+				if(!into) ddn = -ddn;
+				float nnt = into ? REV_REFR_INDEX : REFR_INDEX;
+				float cos_t2;
+				if((cos_t2 = 1.0f - nnt*nnt * (1.0f - ddn*ddn)) < 0)
+				{
+					ray.direction = refl_dir;
+					continue;
+				}
+				vec3 tdir = normalize(ray.direction*nnt - normal * ((into?1:-1) * (ddn*nnt+sqrt(cos_t2))));
+				float c = 1.0f - (into ? -ddn : dot(tdir, normal));
+				float Re = R0 + (1.0f - R0) * pow(c, 5.0f);
+				float Tr = 1.0f - Re;
+				float P = 0.25f + 0.5f * Re;
+				float RP = Re / P, TP = Tr / (1.0f - P);
+				if(rand() < P)
+				{
+					ray.direction = refl_dir;
+					k *= RP;
+				}
+				else
+				{
+					ray.direction = tdir;
+					k *= TP;
+				}*/
 			}
 		}
 		else
@@ -230,7 +254,8 @@ Ray make_ray(in const vec2 screen_pos)
 void main()
 {
 	vec3 color = imageLoad(out_img, PIXEL_COORDS).xyz;
-	vec3 new = trace(make_ray(vec2(gl_GlobalInvocationID.xy) + vec2(rand(), rand()) * 2.0f - 1.0f));
+	Ray cam_ray = make_ray(vec2(gl_GlobalInvocationID.xy) + vec2(rand() - 0.5f, rand() - 0.5f));
+	vec3 new = trace(cam_ray);
 	color = (color * float(last_sample) + new) / float(last_sample + 1);
 	imageStore(out_img, PIXEL_COORDS, vec4(color, 1.0f));
 }

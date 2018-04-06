@@ -7,9 +7,11 @@
 #include "Camera.hpp"
 #include "Config.hpp"
 
-Camera::Camera(float fov) : fov_(fov)
+Camera::Camera()
 {
 	yaw_ = pitch_ = 0.0f;
+	fov_ = 0.3926990817f;
+	aspect_ratio_ = 1.0f;
 }
 
 void Camera::Update()
@@ -23,7 +25,7 @@ void Camera::Update()
 	up_ = glm::cross(right_, forward_);
 
 	height_ = glm::tan(fov_);
-	width_ = height_ * ASPECT_RATIO;
+	width_ = height_ * aspect_ratio_;
 }
 
 void Camera::SetLookAt(const glm::vec3 &look_at)
@@ -73,4 +75,14 @@ void Camera::SetUniform(const RayShader &ray) const
 	glUniform3fv(ray.unif_cam_right, 1, glm::value_ptr(right_));
 	glUniform1f(ray.unif_cam_width, width_);
 	glUniform1f(ray.unif_cam_height, height_);
+}
+
+void Camera::SetFov(const float fov)
+{
+	fov_ = fov;
+}
+
+void Camera::SetAspectRatio(const float aspect_ratio)
+{
+	aspect_ratio_ = aspect_ratio;
 }

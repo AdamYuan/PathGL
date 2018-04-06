@@ -28,6 +28,7 @@ class Application
 {
 private:
 	bool locked_;
+	const unsigned kInvocationX, kInvocationY, kWidth, kHeight, kGroupX, kGroupY;
 	int samples_;
 	Resources res_;
 	RayShader ray_;
@@ -51,7 +52,7 @@ private:
 	void render_quad();
 	unsigned long get_sps();
 public:
-	explicit Application();
+	explicit Application(unsigned width, unsigned height, unsigned invocation_size_x, unsigned invocation_size_y);
 	~Application();
 	void Run();
 };
