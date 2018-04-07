@@ -5,6 +5,9 @@ A simple path tracer written in opengl compute shader
 make
 ```
 ## Usage
+```bash
+./PathGL -scn ./scenes/simple.scene
+```
 	W A S D to move camera
 	Arrow keys to move perspective
 	L to lock movement
