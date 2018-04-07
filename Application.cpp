@@ -4,6 +4,7 @@
 
 #include "Application.hpp"
 #include "Config.hpp"
+#include "SceneLoader.hpp"
 #include <fstream>
 #include <random>
 #include <stb_image_write.h>
@@ -108,9 +109,10 @@ void Application::init_texture()
 	delete[] initial_seed;
 }
 
-void Application::init_ray_shader()
+void Application::init_ray_shader(const std::string &scene_glsl)
 {
 	std::string ray_shader_str {read_file(RAY_SHADER)};
+	ray_shader_str = scene_glsl + ray_shader_str;
 	const char *ray_shader_src1 = ray_shader_str.c_str();
 	char ray_shader_src[65536];
 	sprintf(ray_shader_src, "#version 430 core\nlayout(local_size_x = %u, local_size_y = %u) in;\n%s", kInvocationX, kInvocationY, ray_shader_src1);
@@ -205,7 +207,8 @@ void Application::compute()
 	samples_ ++;
 }
 
-Application::Application(unsigned width, unsigned height, unsigned invocation_size_x, unsigned invocation_size_y)
+Application::Application(unsigned width, unsigned height, unsigned invocation_size_x, unsigned invocation_size_y, float cam_fov,
+						 float cam_speed, float cam_angle, const char *scene_filename) //in degrees
 		: kInvocationX(invocation_size_x), kInvocationY(invocation_size_y),
 		  kGroupX(width / invocation_size_x), kGroupY(height / invocation_size_y),
 		  kWidth(width - (width % invocation_size_x)), kHeight(height - (height % invocation_size_y))
@@ -216,15 +219,22 @@ Application::Application(unsigned width, unsigned height, unsigned invocation_si
 	init_buffers();
 	init_texture();
 	init_quad_shader();
-	init_ray_shader();
+	try
+	{
+		SceneLoader loader{scene_filename};
+		loader.SetCamera(&cam_);
+		init_ray_shader(loader.GetGlsl());
+	}
+	catch (std::exception &e)
+	{
+		printf("scene parse error: %s\n", e.what());
+	}
 	check_work_groups();
 
-	cam_.SetOrigin({.0f, .0f, .0f});
-	cam_.SetLookAt({.0f, .0f, -1.0f});
-	cam_.SetFov(0.3926990817f * 2.0f);
+	cam_.SetFov(cam_fov * 0.0174532925f * 0.5f);
+	cam_.SetAngle(cam_angle);
+	cam_.SetSpeed(cam_speed);
 	cam_.SetAspectRatio((float)kWidth / (float)kHeight);
-	//cam_.SetOrigin({50.0f, 45.0f, 205.6f});
-	//cam_.SetLookAt({50.0f, 44.9f, 204.6f});
 	cam_.Update();
 }
 

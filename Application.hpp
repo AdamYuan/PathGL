@@ -44,7 +44,7 @@ private:
 	void init_window();
 	void init_buffers();
 	void init_texture();
-	void init_ray_shader();
+	void init_ray_shader(const std::string &scene_glsl);
 	void init_quad_shader();
 	void check_work_groups();
 	void destroy_gl_objects();
@@ -52,7 +52,8 @@ private:
 	void render_quad();
 	unsigned long get_sps();
 public:
-	explicit Application(unsigned width, unsigned height, unsigned invocation_size_x, unsigned invocation_size_y);
+	explicit Application(unsigned width, unsigned height, unsigned invocation_size_x, unsigned invocation_size_y, float cam_fov,
+							 float cam_speed, float cam_angle, const char *scene_filename);
 	~Application();
 	void Run();
 };

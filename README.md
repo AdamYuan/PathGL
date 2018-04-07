@@ -2,6 +2,7 @@
 A simple path tracer written in opengl compute shader
 ## Compilation
 ```bash
+cmake .
 make
 ```
 ## Usage

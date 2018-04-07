@@ -12,6 +12,8 @@ Camera::Camera()
 	yaw_ = pitch_ = 0.0f;
 	fov_ = 0.3926990817f;
 	aspect_ratio_ = 1.0f;
+	cam_speed_ = 0.1f;
+	cam_angle_ = 20.0f;
 }
 
 void Camera::Update()
@@ -44,21 +46,21 @@ void Camera::SetOrigin(const glm::vec3 &origin)
 bool Camera::Control(int key)
 {
 	if (key == GLFW_KEY_W)
-		origin_ += CAM_SPEED * forward_;
+		origin_ += cam_speed_ * forward_;
 	else if (key == GLFW_KEY_S)
-		origin_ -= CAM_SPEED * forward_;
+		origin_ -= cam_speed_ * forward_;
 	else if (key == GLFW_KEY_A)
-		origin_ -= glm::normalize(glm::cross(forward_, up_)) * CAM_SPEED;
+		origin_ -= glm::normalize(glm::cross(forward_, up_)) * cam_speed_;
 	else if (key == GLFW_KEY_D)
-		origin_ += glm::normalize(glm::cross(forward_, up_)) * CAM_SPEED;
+		origin_ += glm::normalize(glm::cross(forward_, up_)) * cam_speed_;
 	else if (key == GLFW_KEY_LEFT)
-		yaw_ -= CAM_ANGLE;
+		yaw_ -= cam_angle_;
 	else if (key == GLFW_KEY_RIGHT)
-		yaw_ += CAM_ANGLE;
+		yaw_ += cam_angle_;
 	else if (key == GLFW_KEY_UP)
-		pitch_ += CAM_ANGLE;
+		pitch_ += cam_angle_;
 	else if (key == GLFW_KEY_DOWN)
-		pitch_ -= CAM_ANGLE;
+		pitch_ -= cam_angle_;
 	else
 		return false;
 
@@ -85,4 +87,14 @@ void Camera::SetFov(const float fov)
 void Camera::SetAspectRatio(const float aspect_ratio)
 {
 	aspect_ratio_ = aspect_ratio;
+}
+
+void Camera::SetAngle(float angle)
+{
+	cam_angle_ = angle;
+}
+
+void Camera::SetSpeed(float speed)
+{
+	cam_speed_ = speed;
 }

@@ -40,45 +40,6 @@ struct Ray
 {
 	vec3 origin, direction;
 };
-#define DIFFUSE 0
-#define SPECULAR 1
-#define REFRACTIVE 2
-struct Material
-{
-	vec3 color, emission;
-	int type;
-};
-struct Plane
-{
-	vec3 position, normal;
-	Material material;
-};
-struct Sphere
-{
-	vec3 center;
-	float radius;
-	Material material;
-};
-
-#define PLANE_NUM 6
-#define SPHERE_NUM 4
-const Plane planes[PLANE_NUM] = 
-{
-	{{.0, -2.5, .0}, 	{0, 1, 0},	{{.6, .6, .6},		{0, 0, 0},	DIFFUSE}},
-	{{.0, .0, -5.5}, 	{0, 0, 1},	{{.6, .6, .6},		{0, 0, 0},	DIFFUSE}},
-	{{-2.75, .0, .0},	{1, 0, 0},	{{1.0, .2, .2},		{0, 0, 0},	DIFFUSE}},
-	{{2.75, .0, .0}, 	{-1, 0, 0},	{{.2, 1.0, .2},		{0, 0, 0},	DIFFUSE}},
-	{{.0, 3.0, .0},		{0, -1, 0},	{{.6, .6, .6},		{0, 0, 0},	DIFFUSE}},
-	{{.0, .0, .5}, 		{0, 0, -1},	{{.6, .6, .6},		{0, 0, 0},	DIFFUSE}}
-};
-const Sphere spheres[SPHERE_NUM] =
-{
-	{{-0.75, -1.45, -4.4},	1.05, 	{{.4, .8, .4}, 		{0, 0, 0},		SPECULAR}}, // Middle sphere
-	{{2.0, -2.0, -3.7},	0.5,	{{1.0, 1.0, .0},	{0, 0, 0},		REFRACTIVE}}, // Right sphere
-	{{-1.75, -1.9, -3.1},	0.6,	{{.4, .4, 1.2},		{0, 0, 0},		DIFFUSE}}, // Left sphere
-	{{0, 100.0, -3},		97.005,	{{0, 0, 0}, 		{30, 30, 30},	DIFFUSE}} // Light
-};
-
 
 #define NONE -1
 #define SPHERE 0

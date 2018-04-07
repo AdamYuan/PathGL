@@ -1,0 +1,13 @@
+cam_pos 	0 0 0
+cam_look_at	0 0 -1
+plane		.0 -2.5 .0 		0 1 0	.6 .6 .6	0 0 0	DIFFUSE
+plane		.0 .0 -5.5 		0 0 1	.6 .6 .6	0 0 0	DIFFUSE
+plane		-2.75 .0 .0		1 0 0	1.0 .2 .2	0 0 0	DIFFUSE
+plane		2.75 .0 .0 		-1 0 0	.2 1.0 .2	0 0 0	DIFFUSE
+plane		.0 3.0 .0		0 -1 0	.6 .6 .6	0 0 0	DIFFUSE
+plane		.0 .0 .5 		0 0 -1	.6 .6 .6	0 0 0	DIFFUSE
+
+sphere		-0.75 -1.45 -4.4	1.05 	.4 .8 .4 	0 0 0		SPECULAR 	#Middle sphere
+sphere		2.0 -2.0 -3.7		0.5		1.0 1.0 .0	0 0 0		REFRACTIVE 	#Right sphere
+sphere		-1.75 -1.9 -3.1		0.6		.4 .4 1.2	0 0 0		DIFFUSE 	#Left sphere
+sphere		0 100.0 -3			97.005	0 0 0 		30 30 30	DIFFUSE 	#Light
