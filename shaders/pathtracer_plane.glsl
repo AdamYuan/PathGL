@@ -3,7 +3,7 @@ layout(rgba32ui, binding = 1) uniform uimage2D seed_img;
 
 uniform vec3 cam_origin, cam_forward, cam_right, cam_up;
 uniform float cam_width, cam_height;
-uniform int last_sample;
+uniform uint last_sample;
 
 #define PIXEL_COORDS ivec2(gl_GlobalInvocationID.xy)
 #define MAX_DEPTH 8
@@ -214,9 +214,13 @@ Ray make_ray(in const vec2 screen_pos)
 
 void main()
 {
-	vec3 color = imageLoad(out_img, PIXEL_COORDS).xyz;
-	Ray cam_ray = make_ray(vec2(gl_GlobalInvocationID.xy) + vec2(rand() - 0.5f, rand() - 0.5f));
-	vec3 new = trace(cam_ray);
-	color = (color * float(last_sample) + new) / float(last_sample + 1);
+	vec3 color = imageLoad(out_img, PIXEL_COORDS).xyz * float(last_sample);
+	for(int i = 0; i < SAMPLES; ++i)
+	{
+		Ray cam_ray = make_ray(vec2(gl_GlobalInvocationID.xy) + vec2(rand() - 0.5f, rand() - 0.5f));
+		color += trace(cam_ray);
+	}
+	color /= float(last_sample + SAMPLES);
+
 	imageStore(out_img, PIXEL_COORDS, vec4(color, 1.0f));
 }

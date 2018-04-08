@@ -28,8 +28,8 @@ class Application
 {
 private:
 	bool locked_;
-	const unsigned kInvocationX, kInvocationY, kWidth, kHeight, kGroupX, kGroupY;
-	int samples_;
+	const unsigned kSamplesPerCalculation, kInvocationX, kInvocationY, kWidth, kHeight, kGroupX, kGroupY;
+	unsigned samples_;
 	Resources res_;
 	RayShader ray_;
 	QuadShader quad_;
@@ -46,14 +46,15 @@ private:
 	void init_texture();
 	void init_ray_shader(const std::string &scene_glsl);
 	void init_quad_shader();
-	void check_work_groups();
+	void check_gl();
 	void destroy_gl_objects();
 	void compute();
 	void render_quad();
 	unsigned long get_sps();
 public:
-	explicit Application(unsigned width, unsigned height, unsigned invocation_size_x, unsigned invocation_size_y, float cam_fov,
-							 float cam_speed, float cam_angle, const char *scene_filename);
+	explicit Application(unsigned samples_per_calculation, unsigned width, unsigned height, unsigned invocation_size_x,
+							 unsigned invocation_size_y, float cam_fov, float cam_speed, float cam_angle,
+							 const char *scene_filename);
 	~Application();
 	void Run();
 };

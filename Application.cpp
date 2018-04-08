@@ -15,8 +15,13 @@ std::string Application::read_file(const char *filename)
 	return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
 }
 
-void Application::check_work_groups()
+void Application::check_gl()
 {
+	printf("OpenGL version: %s\n", glGetString(GL_VERSION));
+	printf("GLSL version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+	printf("renderer: %s\n", glGetString(GL_RENDERER));
+	printf("vendor: %s\n", glGetString(GL_VENDOR));
+
 	int work_grp_cnt[3];
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &work_grp_cnt[0]);
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &work_grp_cnt[1]);
@@ -50,11 +55,6 @@ void Application::init_window()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	window_ = glfwCreateWindow(kWidth, kHeight, "", nullptr, nullptr);
 	glfwMakeContextCurrent(window_);
-
-	printf("OpenGL version: %s\n", glGetString(GL_VERSION));
-	printf("GLSL version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-	printf("renderer: %s\n", glGetString(GL_RENDERER));
-	printf("vendor: %s\n", glGetString(GL_VENDOR));
 
 	glfwSetWindowUserPointer(window_, (void*)this);
 
@@ -115,7 +115,11 @@ void Application::init_ray_shader(const std::string &scene_glsl)
 	ray_shader_str = scene_glsl + ray_shader_str;
 	const char *ray_shader_src1 = ray_shader_str.c_str();
 	char ray_shader_src[65536];
-	sprintf(ray_shader_src, "#version 430 core\nlayout(local_size_x = %u, local_size_y = %u) in;\n%s", kInvocationX, kInvocationY, ray_shader_src1);
+	sprintf(ray_shader_src,
+			"#version 430 core\n"
+			"layout(local_size_x = %u, local_size_y = %u) in;\n"
+			"#define SAMPLES %u\n"
+            "%s", kInvocationX, kInvocationY, kSamplesPerCalculation, ray_shader_src1);
 
 	char *real_src = ray_shader_src;
 
@@ -199,17 +203,19 @@ void Application::compute()
 {
 	glUseProgram(ray_.program);
 	cam_.SetUniform(ray_);
-	glUniform1i(ray_.unif_last_sample, samples_);
+	glUniform1ui(ray_.unif_last_sample, samples_);
 	glDispatchCompute(kGroupX, kGroupY, 1);
 	// make sure writing to image has finished before read
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-	samples_ ++;
+	samples_ += kSamplesPerCalculation;
 }
 
-Application::Application(unsigned width, unsigned height, unsigned invocation_size_x, unsigned invocation_size_y, float cam_fov,
-						 float cam_speed, float cam_angle, const char *scene_filename) //in degrees
-		: kInvocationX(invocation_size_x), kInvocationY(invocation_size_y),
+Application::Application(unsigned samples_per_calculation, unsigned width, unsigned height, unsigned invocation_size_x,
+						 unsigned invocation_size_y, float cam_fov, float cam_speed, float cam_angle,
+						 const char *scene_filename) //in degrees
+		: kSamplesPerCalculation(samples_per_calculation),
+		  kInvocationX(invocation_size_x), kInvocationY(invocation_size_y),
 		  kGroupX(width / invocation_size_x), kGroupY(height / invocation_size_y),
 		  kWidth(width - (width % invocation_size_x)), kHeight(height - (height % invocation_size_y))
 {
@@ -229,7 +235,7 @@ Application::Application(unsigned width, unsigned height, unsigned invocation_si
 	{
 		printf("scene parse error: %s\n", e.what());
 	}
-	check_work_groups();
+	check_gl();
 
 	cam_.SetFov(cam_fov * 0.0174532925f * 0.5f);
 	cam_.SetAngle(cam_angle);
@@ -258,7 +264,7 @@ void Application::Run()
 
 		glfwSwapBuffers(window_);
 
-		sprintf(title, "%d s/p %luk sp/s %s", samples_, get_sps() / 1000lu, locked_ ? " [locked]" : "");
+		sprintf(title, "%u s/p %luk sp/s %s", samples_, get_sps() / 1000lu, locked_ ? " [locked]" : "");
 		glfwSetWindowTitle(window_, title);
 	}
 }
@@ -273,7 +279,7 @@ void Application::screenshot()
 		std::copy(pixels + i * kWidth * 3, pixels + (i + 1) * kWidth * 3, final + (kHeight - 1 - i) * kWidth * 3);
 
 	char filename[256];
-	sprintf(filename, "%dspp.png", samples_);
+	sprintf(filename, "%uspp.png", samples_);
 	stbi_write_png(filename, kWidth, kHeight, 3, final, 0);
 
 	delete[] pixels;
@@ -300,7 +306,7 @@ unsigned long Application::get_sps()
 	static unsigned last_time = 0;
 	static unsigned long result = 0, sum = 0;
 
-	sum += kWidth * kHeight;
+	sum += kWidth * kHeight * kSamplesPerCalculation;
 	if((unsigned)glfwGetTime() > last_time)
 	{
 		last_time = (unsigned)glfwGetTime();

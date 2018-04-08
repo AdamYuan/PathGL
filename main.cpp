@@ -6,7 +6,7 @@ int main(int argc, char **argv)
 {
 	argc --; argv ++;
 
-	unsigned width{1440}, height{900}, invocation_size_x{20}, invocation_size_y{20};
+	unsigned width{1440}, height{900}, invocation_size_x{20}, invocation_size_y{20}, samples_per_calculation{1};
 	float fov = 45.0f, speed = 0.1f, angle = 2.5f;
 	const char *scene_filename{nullptr};
 	try
@@ -31,6 +31,8 @@ int main(int argc, char **argv)
 				angle = std::stof(arg);
 			else if(strcmp(cmd, "-scn") == 0)
 				scene_filename = arg;
+			else if(strcmp(cmd, "-spc") == 0)
+				samples_per_calculation = (unsigned)std::stoul(arg);
 			else
 				throw std::runtime_error("invalid argument " + std::string(cmd));
 		}
@@ -40,12 +42,19 @@ int main(int argc, char **argv)
 	catch (std::exception &e)
 	{
 		printf("error: %s\n", e.what());
-		printf("usage: ./PathGL -scn [scene file name]\n-w [width] -h [height] -ix [invocation size x] -iy [invocation size y]\n-cf [fov (degree)] -cs [camera speed] -ca [rotate angle (degree)]\n");
+		printf("usage: ./PathGL \n"
+			   "\t-scn [scene file name]\n"
+			   "\t-w [width] -h [height]\n"
+			   "\t-ix [invocation size x] -iy [invocation size y]\n"
+			   "\t-cf [fov (degree)] -cs [camera speed] -ca [rotate angle (degree)]\n"
+			   "\t-spc [samples per calculation(default is 1)]\n"
+		);
 		return EXIT_FAILURE;
 	}
 
 
-	Application app(width, height, invocation_size_x, invocation_size_y, fov, speed, angle, scene_filename);
+	Application app(samples_per_calculation, width, height, invocation_size_x, invocation_size_y,
+					fov, speed, angle, scene_filename);
 	app.Run();
 
 	return EXIT_SUCCESS;
