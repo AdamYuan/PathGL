@@ -8,6 +8,7 @@
 #include <fstream>
 #include <random>
 #include <stb_image_write.h>
+#include <chrono>
 
 std::string Application::read_file(const char *filename)
 {
@@ -40,8 +41,9 @@ void Application::check_gl()
 	glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &work_grp_inv);
 	printf("max local work group invocations %i\n", work_grp_inv);
 
-	printf("\ncurrent size x:%u y:%u\ncurrent group count x:%u y:%u\ncurrent window size w:%u h:%u\n",
-		   kInvocationX, kInvocationY, kGroupX, kGroupY, kWidth, kHeight);
+	//printf("\ncurrent size x:%u y:%u\ncurrent group count x:%u y:%u\ncurrent window size w:%u h:%u\n",
+	//	   kInvocationX, kInvocationY, kGroupX, kGroupY, kWidth, kHeight);
+	printf("current window size w:%u h:%u\n", kWidth, kHeight);
 }
 
 void Application::init_window()
@@ -69,11 +71,11 @@ void Application::init_buffers()
 										1.0f, 1.0f, 1.0f, 1.0f,
 										-1.0f, 1.0f, 0.0f, 1.0f,
 										-1.0f, -1.0f, 0.0f, 0.0f };
-	glGenBuffers(1, &res_.vbo);
-	glGenVertexArrays(1, &res_.vao);
+	glGenBuffers(1, &vbo);
+	glGenVertexArrays(1, &vao);
 
-	glBindVertexArray(res_.vao);
-	glBindBuffer(GL_ARRAY_BUFFER, res_.vbo);
+	glBindVertexArray(vao);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), quad_vertices, GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GL_FLOAT), nullptr);//position
@@ -84,29 +86,30 @@ void Application::init_buffers()
 
 void Application::init_texture()
 {
-	glGenTextures(1, &res_.quad_tex);
-	glBindTexture(GL_TEXTURE_2D, res_.quad_tex);
+	glGenTextures(1, &quad_tex);
+	glBindTexture(GL_TEXTURE_2D, quad_tex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, kWidth, kHeight, 0, GL_RGBA, GL_FLOAT, nullptr);
-	glBindImageTexture(0, res_.quad_tex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+	glBindImageTexture(0, quad_tex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
-	std::mt19937 generator;
-	auto *initial_seed = new GLuint[kWidth * kHeight * 4];
+	std::random_device device;
+	std::mt19937 generator{device()};
+	auto *initial_seeds = new GLuint[kWidth * kHeight * 4];
 	for(int i = 0; i < kWidth * kHeight * 4; ++i)
-		initial_seed[i] = (GLuint)(generator());
+		initial_seeds[i] = (GLuint)generator();
 	glGenTextures(1, &ray_.seed_tex);
 	glBindTexture(GL_TEXTURE_2D, ray_.seed_tex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, kWidth, kHeight, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, initial_seed);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, kWidth, kHeight, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, initial_seeds);
 	glBindImageTexture(1, ray_.seed_tex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32UI);
 
-	delete[] initial_seed;
+	delete[] initial_seeds;
 }
 
 void Application::init_ray_shader(const std::string &scene_glsl)
@@ -119,7 +122,8 @@ void Application::init_ray_shader(const std::string &scene_glsl)
 			"#version 430 core\n"
 			"layout(local_size_x = %u, local_size_y = %u) in;\n"
 			"#define SAMPLES %u\n"
-            "%s", kInvocationX, kInvocationY, kSamplesPerCalculation, ray_shader_src1);
+			"#define MAX_DEPTH %u\n"
+			"%s", kInvocationX, kInvocationY, kSamplesPerCalculation, kMaxDepth, ray_shader_src1);
 
 	char *real_src = ray_shader_src;
 
@@ -152,35 +156,48 @@ void Application::init_ray_shader(const std::string &scene_glsl)
 
 void Application::init_quad_shader()
 {
-	std::string vert_shader_str = read_file(VERT_SHADER);
-	std::string frag_shader_str = read_file(FRAG_SHADER);
-	const char *vert_shader_src = vert_shader_str.c_str(), *frag_shader_src = frag_shader_str.c_str();
+	const char *vert_shader_src =
+			"#version 430 core\n"
+			"layout(location=0) in vec2 position;\n"
+			"layout(location=1) in vec2 texcoord;\n"
+			"out vec2 coord;\n"
+			"void main()\n"
+			"{\n"
+			"	gl_Position = vec4(position, 0.0f, 1.0f);\n"
+			"	coord = texcoord;\n"
+			"}\n";
+	const char *frag_shader_src =
+			"#version 430 core\n"
+			"layout(binding=0) uniform sampler2D sampler;\n"
+			"in vec2 coord;\n"
+			"out vec4 color;\n"
+			"void main()\n"
+			"{\n"
+			"	vec3 color3 = pow(texture(sampler, coord).xyz, vec3(1.0f / 2.2f));\n"
+			"	color = vec4(color3, 1.0f);\n"
+			"}\n";
 	GLuint vert_shader = glCreateShader(GL_VERTEX_SHADER), frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
 
-	{
-		glShaderSource(vert_shader, 1, &vert_shader_src, nullptr);
-		glCompileShader(vert_shader);
+	glShaderSource(vert_shader, 1, &vert_shader_src, nullptr);
+	glCompileShader(vert_shader);
 
-		glShaderSource(frag_shader, 1, &frag_shader_src, nullptr);
-		glCompileShader(frag_shader);
-	}
+	glShaderSource(frag_shader, 1, &frag_shader_src, nullptr);
+	glCompileShader(frag_shader);
 
 	//link shaders
-	{
-		quad_.program = glCreateProgram();
-		glAttachShader(quad_.program, vert_shader);
-		glAttachShader(quad_.program, frag_shader);
-		glLinkProgram(quad_.program);
-	}
+	quad_.program = glCreateProgram();
+	glAttachShader(quad_.program, vert_shader);
+	glAttachShader(quad_.program, frag_shader);
+	glLinkProgram(quad_.program);
 
 	glDeleteShader(vert_shader); glDeleteShader(frag_shader);
 }
 
 void Application::destroy_gl_objects()
 {
-	glDeleteVertexArrays(1, &res_.vao);
-	glDeleteBuffers(1, &res_.vbo);
-	glDeleteTextures(1, &res_.quad_tex);
+	glDeleteVertexArrays(1, &vao);
+	glDeleteBuffers(1, &vbo);
+	glDeleteTextures(1, &quad_tex);
 	glDeleteTextures(1, &ray_.seed_tex);
 
 	glDeleteProgram(ray_.program);
@@ -193,9 +210,9 @@ void Application::render_quad()
 
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, res_.quad_tex);
+	glBindTexture(GL_TEXTURE_2D, quad_tex);
 
-	glBindVertexArray(res_.vao);
+	glBindVertexArray(vao);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
@@ -211,10 +228,10 @@ void Application::compute()
 	samples_ += kSamplesPerCalculation;
 }
 
-Application::Application(unsigned samples_per_calculation, unsigned width, unsigned height, unsigned invocation_size_x,
-						 unsigned invocation_size_y, float cam_fov, float cam_speed, float cam_angle,
+Application::Application(unsigned samples_per_calculation, unsigned max_depth, unsigned width, unsigned height,
+						 unsigned invocation_size_x, unsigned invocation_size_y, float cam_fov, float cam_speed, float cam_angle,
 						 const char *scene_filename) //in degrees
-		: kSamplesPerCalculation(samples_per_calculation),
+		: kSamplesPerCalculation(samples_per_calculation), kMaxDepth(max_depth),
 		  kInvocationX(invocation_size_x), kInvocationY(invocation_size_y),
 		  kGroupX(width / invocation_size_x), kGroupY(height / invocation_size_y),
 		  kWidth(width - (width % invocation_size_x)), kHeight(height - (height % invocation_size_y))
@@ -269,7 +286,7 @@ void Application::Run()
 	}
 }
 
-void Application::screenshot()
+void Application::screenshots()
 {
 	auto *pixels = new uint8_t[kWidth * kHeight * 3];
 	auto *final = new uint8_t[kWidth * kHeight * 3];
@@ -295,7 +312,7 @@ void Application::key_callback(GLFWwindow *window, int key, int, int action, int
 	if(action == GLFW_PRESS)
 	{
 		if(key == GLFW_KEY_I)
-			app->screenshot();
+			app->screenshots();
 		else if(key == GLFW_KEY_L)
 			app->locked_ = !app->locked_;
 	}

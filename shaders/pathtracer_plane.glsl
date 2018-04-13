@@ -6,7 +6,6 @@ uniform float cam_width, cam_height;
 uniform uint last_sample;
 
 #define PIXEL_COORDS ivec2(gl_GlobalInvocationID.xy)
-#define MAX_DEPTH 8
 #define RAY_T_MIN 0.0001f
 #define RAY_T_MAX 1.0e30f
 const float REFR_INDEX = 1.5f;
@@ -116,10 +115,10 @@ bool intersect(in const Ray ray, out vec3 p, out vec3 normal, out Material mat)
 }
 
 /*vec3 hemisphere(in const float u1, in const float u2)
-{
-	float r = sqrt(1.0f - u1 * u1), phi = 6.28318530718f * u2;
-	return vec3(cos(phi) * r, sin(phi) * r, u1);
-}*/
+  {
+  float r = sqrt(1.0f - u1 * u1), phi = 6.28318530718f * u2;
+  return vec3(cos(phi) * r, sin(phi) * r, u1);
+  }*/
 
 vec3 trace(in Ray ray)
 {
@@ -128,77 +127,75 @@ vec3 trace(in Ray ray)
 	Material mat;
 	for(int depth = 0; depth < MAX_DEPTH; ++depth)
 	{
-		if(intersect(ray, p, normal, mat))
-		{
-			ray.origin = p;
-			ret += mat.emission * k;
-			k *= mat.color;
-
-			if(mat.type == DIFFUSE)
-			{
-				//pick random reflect ray (from smallpt)
-				float r1 = rand() * 6.28318530718f;
-				float r2 = rand(), r2s = sqrt(r2);
-				vec3 u = normalize(cross(abs(normal.x) > .01 ? vec3(0, 1, 0) : vec3(1, 0, 0), normal));
-				vec3 v = cross(normal, u);
-				ray.direction = normalize(u * cos(r1) * r2s + v * sin(r1) * r2s + normal * sqrt(1 - r2));
-
-				float cos_t = dot(ray.direction, normal);
-				k *= cos_t;
-			}
-			else if(mat.type == SPECULAR)
-				ray.direction = reflect(ray.direction, normal);
-			else //refractive
-			{
-				float refr_ind = REV_REFR_INDEX;
-
-				float cost1 = -dot(normal, ray.direction);
-				if(cost1 < 0)//inside
-				{
-					normal = -normal;
-					cost1 = -cost1;
-					refr_ind = REFR_INDEX;
-				}
-
-				float cost2 = 1.0f - refr_ind * refr_ind * (1.0f - cost1 * cost1);
-				float r_prob = R0 + (1.0f + R0) * pow(1.0f - cost1, 5.0f);
-				if(cost2 > 0 && rand() > r_prob)
-					ray.direction = normalize(ray.direction * refr_ind + normal * (refr_ind * cost1 - sqrt(cost2)));
-				else
-					ray.direction = normalize(ray.direction + normal * cost1 * 2.0f);
-
-				k *= 1.15f;
-				/*vec3 refl_dir = reflect(ray.direction, normal);
-				float ddn = dot(normal, ray.direction);
-				bool into = ddn > 0;
-				if(!into) ddn = -ddn;
-				float nnt = into ? REV_REFR_INDEX : REFR_INDEX;
-				float cos_t2;
-				if((cos_t2 = 1.0f - nnt*nnt * (1.0f - ddn*ddn)) < 0)
-				{
-					ray.direction = refl_dir;
-					continue;
-				}
-				vec3 tdir = normalize(ray.direction*nnt - normal * ((into?1:-1) * (ddn*nnt+sqrt(cos_t2))));
-				float c = 1.0f - (into ? -ddn : dot(tdir, normal));
-				float Re = R0 + (1.0f - R0) * pow(c, 5.0f);
-				float Tr = 1.0f - Re;
-				float P = 0.25f + 0.5f * Re;
-				float RP = Re / P, TP = Tr / (1.0f - P);
-				if(rand() < P)
-				{
-					ray.direction = refl_dir;
-					k *= RP;
-				}
-				else
-				{
-					ray.direction = tdir;
-					k *= TP;
-				}*/
-			}
-		}
-		else
+		if(!intersect(ray, p, normal, mat))
 			break;
+
+		ray.origin = p;
+		ret += mat.emission * k;
+		k *= mat.color;
+
+		if(mat.type == DIFFUSE)
+		{
+			//pick random reflect ray (from smallpt)
+			float r1 = rand() * 6.28318530718f;
+			float r2 = rand(), r2s = sqrt(r2);
+			vec3 u = normalize(cross(abs(normal.x) > .01 ? vec3(0, 1, 0) : vec3(1, 0, 0), normal));
+			vec3 v = cross(normal, u);
+			ray.direction = normalize(u * cos(r1) * r2s + v * sin(r1) * r2s + normal * sqrt(1 - r2));
+
+			float cos_t = dot(ray.direction, normal);
+			k *= cos_t;
+		}
+		else if(mat.type == SPECULAR)
+			ray.direction = reflect(ray.direction, normal);
+		else //refractive
+		{
+			float refr_ind = REV_REFR_INDEX;
+
+			float cost1 = -dot(normal, ray.direction);
+			if(cost1 < 0)//inside
+			{
+				normal = -normal;
+				cost1 = -cost1;
+				refr_ind = REFR_INDEX;
+			}
+
+			float cost2 = 1.0f - refr_ind * refr_ind * (1.0f - cost1 * cost1);
+			float r_prob = R0 + (1.0f + R0) * pow(1.0f - cost1, 5.0f);
+			if(cost2 > 0 && rand() > r_prob)
+				ray.direction = normalize(ray.direction * refr_ind + normal * (refr_ind * cost1 - sqrt(cost2)));
+			else
+				ray.direction = normalize(ray.direction + normal * cost1 * 2.0f);
+
+			k *= 1.15f;
+			/*vec3 refl_dir = reflect(ray.direction, normal);
+			  float ddn = dot(normal, ray.direction);
+			  bool into = ddn < 0;
+			  if(!into) ddn = -ddn;
+			  float nnt = into ? REV_REFR_INDEX : REFR_INDEX;
+			  float cos_t2;
+			  if((cos_t2 = 1.0f - nnt*nnt * (1.0f - ddn*ddn)) < 0)
+			  {
+			  ray.direction = refl_dir;
+			  continue;
+			  }
+			  vec3 tdir = normalize(ray.direction*nnt - normal * ((into?1:-1) * (ddn*nnt+sqrt(cos_t2))));
+			  float c = 1.0f - (into ? -ddn : dot(tdir, normal));
+			  float Re = R0 + (1.0f - R0) * pow(c, 5.0f);
+			  float Tr = 1.0f - Re;
+			  float P = 0.25f + 0.5f * Re;
+			  float RP = Re / P, TP = Tr / (1.0f - P);
+			  if(rand() < P)
+			  {
+			  ray.direction = refl_dir;
+			  k *= RP;
+			  }
+			  else
+			  {
+			  ray.direction = tdir;
+			  k *= TP;
+			  }*/
+		}
 	}
 	return ret;
 }

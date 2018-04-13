@@ -11,10 +11,6 @@
 
 #include "Camera.hpp"
 
-struct Resources
-{
-	GLuint vao, vbo, quad_tex;
-};
 struct RayShader
 {
 	GLuint program, seed_tex;
@@ -28,9 +24,9 @@ class Application
 {
 private:
 	bool locked_;
-	const unsigned kSamplesPerCalculation, kInvocationX, kInvocationY, kWidth, kHeight, kGroupX, kGroupY;
+	const unsigned kSamplesPerCalculation, kMaxDepth, kInvocationX, kInvocationY, kWidth, kHeight, kGroupX, kGroupY;
 	unsigned samples_;
-	Resources res_;
+	GLuint vao, vbo, quad_tex;
 	RayShader ray_;
 	QuadShader quad_;
 
@@ -40,7 +36,7 @@ private:
 	static std::string read_file(const char *filename);
 	static void key_callback(GLFWwindow *window, int key, int, int action, int);
 
-	void screenshot();
+	void screenshots();
 	void init_window();
 	void init_buffers();
 	void init_texture();
@@ -52,8 +48,8 @@ private:
 	void render_quad();
 	unsigned long get_sps();
 public:
-	explicit Application(unsigned samples_per_calculation, unsigned width, unsigned height, unsigned invocation_size_x,
-							 unsigned invocation_size_y, float cam_fov, float cam_speed, float cam_angle,
+	explicit Application(unsigned samples_per_calculation, unsigned max_depth, unsigned width, unsigned height,
+							 unsigned invocation_size_x, unsigned invocation_size_y, float cam_fov, float cam_speed, float cam_angle,
 							 const char *scene_filename);
 	~Application();
 	void Run();

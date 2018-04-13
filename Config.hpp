@@ -6,7 +6,5 @@
 #define CONFIG_HPP
 
 #define RAY_SHADER "shaders/pathtracer_plane.glsl"
-#define FRAG_SHADER "shaders/quad.frag"
-#define VERT_SHADER "shaders/quad.vert"
 
 #endif
